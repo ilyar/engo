@@ -35,8 +35,8 @@ import "github.com/EngoEngine/ecs"
 // Getters
 
 // GetAnimationComponent Provides container classes ability to fulfil the interface and be accessed more simply by systems, eg in AddByInterface Methods
-func (c *AnimationComponent) GetAnimationComponent() *AnimationComponent {
-	return c
+func (ac *AnimationComponent) GetAnimationComponent() *AnimationComponent {
+	return ac
 }
 
 // GetMouseComponent Provides container classes ability to fulfil the interface and be accessed more simply by systems, eg in AddByInterface Methods
@@ -109,6 +109,7 @@ type Animationable interface {
 	BasicFace
 	AnimationFace
 	RenderFace
+	SpaceFace
 }
 
 // Mouseable is the required interface for the MouseSystem AddByInterface method

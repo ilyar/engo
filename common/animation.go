@@ -4,12 +4,19 @@ import (
 	"log"
 
 	"github.com/EngoEngine/ecs"
+	"github.com/EngoEngine/engo"
+	"github.com/EngoEngine/engo/math"
 )
+
+type Frame struct {
+	Index int
+	Bias  *engo.Point
+}
 
 // Animation represents properties of an animation.
 type Animation struct {
 	Name   string
-	Frames []int
+	Frames []*Frame
 	Loop   bool
 }
 
@@ -70,13 +77,32 @@ func (ac *AnimationComponent) AddAnimations(actions []*Animation) {
 
 // Cell returns the drawable for the current frame.
 func (ac *AnimationComponent) Cell() Drawable {
-	if len(ac.CurrentAnimation.Frames) == 0 {
-		log.Println("No frame data for this animation. Selecting zeroth drawable. If this is incorrect, add an action to the animation.")
+	if ac.Frame() == nil {
 		return ac.Drawables[0]
 	}
-	idx := ac.CurrentAnimation.Frames[ac.index]
 
-	return ac.Drawables[idx]
+	return ac.Drawables[ac.Frame().Index]
+}
+
+func (ac *AnimationComponent) Bias(position engo.Point) engo.Point {
+	if ac.Frame() == nil {
+		return position
+	}
+
+	return engo.Point{
+		X: math.Abs(ac.Frame().Bias.X),
+		Y: math.Abs(ac.Frame().Bias.Y),
+	}
+}
+
+func (ac *AnimationComponent) Frame() *Frame {
+	if len(ac.CurrentAnimation.Frames) == 0 {
+		log.Println("No frame data for this animation. Selecting zeroth drawable. If this is incorrect, add an action to the animation.")
+		return nil
+	}
+	frame := ac.CurrentAnimation.Frames[ac.index]
+
+	return frame
 }
 
 // NextFrame advances the current animation by one frame.
@@ -106,20 +132,25 @@ type AnimationSystem struct {
 type animationEntity struct {
 	*AnimationComponent
 	*RenderComponent
+	*SpaceComponent
 }
 
 // Add starts tracking the given entity.
-func (a *AnimationSystem) Add(basic *ecs.BasicEntity, anim *AnimationComponent, render *RenderComponent) {
+func (a *AnimationSystem) Add(basic *ecs.BasicEntity, anim *AnimationComponent, render *RenderComponent, space *SpaceComponent) {
 	if a.entities == nil {
 		a.entities = make(map[uint64]animationEntity)
 	}
-	a.entities[basic.ID()] = animationEntity{anim, render}
+	a.entities[basic.ID()] = animationEntity{
+		anim,
+		render,
+		space,
+	}
 }
 
 // AddByInterface Allows an Entity to be added directly using the Animtionable interface. which every entity containing the BasicEntity,AnimationComponent,and RenderComponent anonymously, automatically satisfies.
 func (a *AnimationSystem) AddByInterface(i ecs.Identifier) {
 	o, _ := i.(Animationable)
-	a.Add(o.GetBasicEntity(), o.GetAnimationComponent(), o.GetRenderComponent())
+	a.Add(o.GetBasicEntity(), o.GetAnimationComponent(), o.GetRenderComponent(), o.GetSpaceComponent())
 }
 
 // Remove stops tracking the given entity.
@@ -142,6 +173,7 @@ func (a *AnimationSystem) Update(dt float32) {
 		e.AnimationComponent.change += dt
 		if e.AnimationComponent.change >= e.AnimationComponent.Rate {
 			e.RenderComponent.Drawable = e.AnimationComponent.Cell()
+			e.SpaceComponent.Position = e.AnimationComponent.Bias(e.SpaceComponent.Position)
 			e.AnimationComponent.NextFrame()
 		}
 	}
