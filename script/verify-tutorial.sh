@@ -16,23 +16,21 @@ verify () {
   tutorialPath="tmp/${tutorial}"
   if [ ! -d "${tutorialPath}" ]; then
     git clone "https://github.com/EngoEngine/${tutorial}.git" "${tutorialPath}"
-    cd "${tutorialPath}"
-    go mod init github.com/EngoEngine/TrafficManager
-    else
-    cd "${tutorialPath}"
   fi
-
-  rm -f go.mod
-  if [ "${OS_FAMILY}" == "windows" ]; then
-    go mod edit -replace="github.com/EngoEngine/engo=D:$(printf "%s" "${projectDir:2}" | tr / \\)"
-  else
-    go mod edit -replace="github.com/EngoEngine/engo=${projectDir}"
-  fi
+  cd "${tutorialPath}"
 
   for branch in $branches
   do
       println "VERIFYING ${branch}..."
       git checkout "${branch}"
+      rm -f go.mod
+      rm -f go.sum
+      go mod init github.com/EngoEngine/TrafficManager
+      if [ "${OS_FAMILY}" == "windows" ]; then
+        go mod edit -replace="github.com/EngoEngine/engo=D:$(printf "%s" "${projectDir:2}" | tr / \\)"
+      else
+        go mod edit -replace="github.com/EngoEngine/engo=${projectDir}"
+      fi
       "${projectDir}/script/go-build.sh"
       go clean
   done

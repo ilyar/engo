@@ -37,16 +37,5 @@ jobs:
       - name: Setup toolchain
         run: bash script/toolchain.sh -s
 
-      - name: Run qa
-        run: make qa
-
-      - name: Run coveralls
-        env:
-          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: make coveralls
-
-      - name: Run bench
-        run: make bench
-
       - name: Run verify
         run: make verify
